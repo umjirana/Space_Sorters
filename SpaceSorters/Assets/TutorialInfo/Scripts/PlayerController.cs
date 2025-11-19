@@ -5,30 +5,37 @@ using UnityEngine.XR.Interaction.Toolkit;
 public class PlayerController : MonoBehaviour
 {
     [Header("1. 카메라 설정")]
-    public GameObject mainCamera;      // 1인칭 카메라 (Main Camera)
-    public GameObject topDownCamera;   // 3인칭 카메라 (TopDownCamera)
+    public Camera mainCamComponent;    // Main Camera의 Camera 컴포넌트
+    public Camera topDownCamComponent; // TopDownCamera의 Camera 컴포넌트
     public InputActionProperty switchViewAction; // 시점 전환 버튼 (B키)
 
-    [Header("2. 손 설정 (기능)")]
-    public XRDirectInteractor leftHandInteractor;  // 왼쪽 손 잡기 기능
-    public XRDirectInteractor rightHandInteractor; // 오른쪽 손 잡기 기능
+    [Header("2. 손 설정")]
+    public XRDirectInteractor leftHandInteractor;
+    public XRDirectInteractor rightHandInteractor;
+    public GameObject rightHandObject; // 오른손 전체 (끄기용)
 
-    [Header("3. 손 설정 (모델)")]
-    public GameObject rightHandObject; // 오른손 전체 (시점 전환 시 꺼버릴 대상)
+    [Header("3. 설정값")]
+    public float switchCooldown = 3.0f;
+    private float lastSwitchTime = -99f;
+    private bool isTopDown = false; // 현재 시점 상태 (false=1인칭, true=3인칭)
 
-    [Header("4. 설정값")]
-    public float switchCooldown = 3.0f; // 쿨타임 3초
-
-    private bool isTopDown = false;     // 현재 시점 상태
-    private float lastSwitchTime = -99f; // 마지막으로 버튼 누른 시간
+    private void Start()
+    {
+        // 카메라 초기화: 메인 카메라는 항상 켜두되, 우선순위(depth)로 조절
+        if (mainCamComponent != null) mainCamComponent.depth = 0;
+        if (topDownCamComponent != null)
+        {
+            topDownCamComponent.depth = 10; // 켜지면 무조건 위에 덮어씌움
+            topDownCamComponent.gameObject.SetActive(false); // 일단 꺼둠
+        }
+    }
 
     private void OnEnable()
     {
-        // 버튼 입력 활성화 및 연결
         switchViewAction.action.Enable();
         switchViewAction.action.performed += OnSwitchView;
 
-        // 잡기 시도할 때마다 검사하는 기능 연결
+        // 잡기 시도할 때마다 검사 (이벤트 연결)
         leftHandInteractor.selectEntered.AddListener(OnGrabAttempt);
         rightHandInteractor.selectEntered.AddListener(OnGrabAttempt);
     }
@@ -41,54 +48,46 @@ public class PlayerController : MonoBehaviour
         rightHandInteractor.selectEntered.RemoveListener(OnGrabAttempt);
     }
 
-    // ■ 시점 전환 로직 (버튼 눌렀을 때)
+    // ■ 시점 전환 로직
     private void OnSwitchView(InputAction.CallbackContext context)
     {
-        // 쿨타임 체크
-        if (Time.time - lastSwitchTime < switchCooldown)
-        {
-            Debug.Log($"쿨타임! {switchCooldown - (Time.time - lastSwitchTime):F1}초 남음");
-            return;
-        }
+        if (Time.time - lastSwitchTime < switchCooldown) return;
 
-        isTopDown = !isTopDown; // 상태 뒤집기 (1인칭 <-> 3인칭)
+        isTopDown = !isTopDown;
+        lastSwitchTime = Time.time;
 
-        if (isTopDown)
+        if (isTopDown) // 3인칭 전환
         {
-            // 3인칭 모드: 탑뷰 켜기, 1인칭 끄기, **오른손 끄기**
-            mainCamera.SetActive(false);
-            topDownCamera.SetActive(true);
-            if (rightHandObject != null) rightHandObject.SetActive(false);
-            Debug.Log(">> 3인칭 전환 (오른손 봉인)");
+            // 메인 카메라는 끄지 않음 (그래야 이동 키가 먹힘)
+            topDownCamComponent.gameObject.SetActive(true); // 탑뷰 켜서 덮기
+            if (rightHandObject != null) rightHandObject.SetActive(false); // 오른손 봉인
+            Debug.Log(">> 3인칭 전환 (왼손 1티어만 가능)");
         }
-        else
+        else // 1인칭 복귀
         {
-            // 1인칭 모드: 원래대로 복구
-            mainCamera.SetActive(true);
-            topDownCamera.SetActive(false);
-            if (rightHandObject != null) rightHandObject.SetActive(true);
-            Debug.Log(">> 1인칭 복귀");
+            topDownCamComponent.gameObject.SetActive(false); // 탑뷰 끄기
+            if (rightHandObject != null) rightHandObject.SetActive(true); // 오른손 복구
+            Debug.Log(">> 1인칭 복귀 (자유)");
         }
-
-        lastSwitchTime = Time.time; // 시간 기록
     }
 
-    // ■ 잡기 제한 로직 (왼손은 1단계만 잡게 하기)
+    // ■ 잡기 제한 로직 (수정됨!)
     private void OnGrabAttempt(SelectEnterEventArgs args)
     {
-        // 잡으려는 물건 가져오기
+        // 1인칭일 때는 제한 없음! (바로 리턴)
+        if (!isTopDown) return;
+
         var grabInteractable = args.interactableObject as XRGrabInteractable;
         if (grabInteractable == null) return;
 
-        // 물건에 붙은 'Item' 스크립트 정보 가져오기
         Item itemData = grabInteractable.GetComponent<Item>();
 
-        // 아이템 정보가 있고, 왼손으로 잡았는데, 1단계가 아니라면?
-        if (itemData != null && args.interactorObject == leftHandInteractor && itemData.tier != ItemTier.Tier1)
+        // [조건] 3인칭이고 + 아이템 데이터가 있고 + 1단계가 아니라면? -> 뱉어냄
+        if (itemData != null && itemData.tier != ItemTier.Tier1)
         {
-            // 강제로 놓게 만듦 (Interaction Manager에게 "취소해!"라고 명령)
+            // 강제로 놓기
             args.manager.SelectExit(args.interactorObject, grabInteractable);
-            Debug.Log("🚫 왼손은 1단계 아이템만 잡을 수 있습니다!");
+            Debug.Log("🚫 3인칭에서는 1단계 아이템만 잡을 수 있습니다!");
         }
     }
 }
