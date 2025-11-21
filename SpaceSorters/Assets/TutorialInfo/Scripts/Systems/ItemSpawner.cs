@@ -1,48 +1,36 @@
 using UnityEngine;
 using System.Collections;
-using System.Collections.Generic; // ¸®½ºÆ®(List)¸¦ ¾²±â À§ÇØ ÇÊ¼ö!
+using System.Collections.Generic; // ë¦¬ìŠ¤íŠ¸ ì‚¬ìš©ì„ ìœ„í•´ ì¶”ê°€
 
 public class ItemSpawner : MonoBehaviour
 {
     [Header("Spawn Settings")]
-    [Tooltip("»ı¼ºÇÒ ¾ÆÀÌÅÛ ÇÁ¸®ÆÕ 6Á¾À» ÀÌ°÷¿¡ µî·ÏÇÏ¼¼¿ä")]
-    public List<GameObject> spawnList; // ¾ÆÀÌÅÛ ¸ñ·Ï (¸®½ºÆ®)
+    public List<GameObject> spawnList; // ìƒì„±í•  ì•„ì´í…œ ëª©ë¡ (6ì¢… ë„£ì„ ê³³)
 
-    [Header("Random Timing Settings")]
-    [Tooltip("ÃÖ¼Ò ´ë±â ½Ã°£ (ÃÊ)")]
-    public float minDelay = 1.0f;
-    [Tooltip("ÃÖ´ë ´ë±â ½Ã°£ (ÃÊ)")]
-    public float maxDelay = 6.0f; // 6ÃÊ ¾È¿¡ ³ª¿À°Ô ¼³Á¤
+    [Header("Timing (GDD: 1.2s ~ 1.8s)")]
+    public float minDelay = 1.2f;
+    public float maxDelay = 1.8f;
 
     private void Start()
     {
-        // ¸®½ºÆ®¿¡ ¾ÆÀÌÅÛÀÌ ÇÏ³ª¶óµµ ÀÖ¾î¾ß ½ÇÇà (¿¡·¯ ¹æÁö)
         if (spawnList.Count > 0)
-        {
             StartCoroutine(SpawnRoutine());
-        }
-        else
-        {
-            Debug.LogError("½ºÆ÷³Ê¿¡ ¾ÆÀÌÅÛ ÇÁ¸®ÆÕÀÌ µî·ÏµÇÁö ¾Ê¾Ò½À´Ï´Ù!");
-        }
     }
 
     IEnumerator SpawnRoutine()
     {
         while (true)
         {
-            // 1. ·£´ı ¾ÆÀÌÅÛ »Ì±â (0¹øºÎÅÍ ¸®½ºÆ® ³¡±îÁö Áß ÇÏ³ª)
+            // 1. ëœë¤ ì•„ì´í…œ ì„ íƒ
             int randomIndex = Random.Range(0, spawnList.Count);
-            GameObject randomItem = spawnList[randomIndex];
+            GameObject selectedItem = spawnList[randomIndex];
 
-            // 2. ¾ÆÀÌÅÛ »ı¼º (³» À§Ä¡¿¡¼­)
-            Instantiate(randomItem, transform.position, Quaternion.identity);
+            // 2. ìƒì„±
+            Instantiate(selectedItem, transform.position, Quaternion.identity);
 
-            // 3. ·£´ı ½Ã°£ °è»ê (ÃÖ¼Ò ~ ÃÖ´ë »çÀÌ)
-            float randomWaitTime = Random.Range(minDelay, maxDelay);
-
-            // 4. ±â´Ù¸®±â
-            yield return new WaitForSeconds(randomWaitTime);
+            // 3. ëœë¤ ì‹œê°„ ëŒ€ê¸°
+            float waitTime = Random.Range(minDelay, maxDelay);
+            yield return new WaitForSeconds(waitTime);
         }
     }
 }

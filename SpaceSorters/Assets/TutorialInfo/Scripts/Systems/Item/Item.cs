@@ -1,26 +1,27 @@
 using UnityEngine;
 
+// ì•„ì´í…œì˜ ì¢…ë¥˜ì™€ ë“±ê¸‰ì„ ì •ì˜í•˜ëŠ” ëª©ë¡í‘œ
 public enum ItemType { Good, Bad }
 public enum ItemTier { Tier1, Tier2, Tier3 }
-public enum BadEffect { None, InstantFine, BeltOverload, VisionBlur } // µğ¹öÇÁ Á¾·ù
+public enum BadEffect { None, InstantFine, BeltOverload, VisionBlur } // ë‚˜ì¤‘ì— ì“¸ ë””ë²„í”„ ì¢…ë¥˜
 
 public class Item : MonoBehaviour
 {
-    [Header("1. ±âº» Á¤º¸")]
-    public ItemType type;         // Good / Bad
-    public ItemTier tier;         // Å©±â ¹× ¹«°Ô µî±Ş
+    [Header("1. ê¸°ë³¸ ì •ë³´")]
+    public ItemType type;         // Good(ì •ìƒ) ë˜ëŠ” Bad(ë¶ˆëŸ‰)
+    public ItemTier tier;         // 1, 2, 3 ë‹¨ê³„ (í¬ê¸°/ë¬´ê²Œ)
 
-    [Header("2. Good ¾ÆÀÌÅÛ ¼³Á¤")]
-    public int price = 100;       // È¹µæ Á¡¼ö ($100, $300, $700)
+    [Header("2. Good ì•„ì´í…œ ì„¤ì •")]
+    public int price = 100;       // íšë“ ì‹œ ì ìˆ˜
 
-    [Header("3. Bad ¾ÆÀÌÅÛ ¼³Á¤")]
-    public BadEffect badEffect = BadEffect.None; // ÆĞ³ÎÆ¼ Á¾·ù
+    [Header("3. Bad ì•„ì´í…œ ì„¤ì •")]
+    public BadEffect badEffect = BadEffect.None; // ë¶ˆëŸ‰í’ˆ íŒ¨ë„í‹° ì¢…ë¥˜
 
-    [Header("4. °øÅë ¹°¸® ¼³Á¤")]
+    [Header("4. ê³µí†µ ë¬¼ë¦¬ ì„¤ì •")]
     [Range(0.1f, 0.4f)]
-    public float weightPenalty = 0.1f; // ÀÌµ¿¼Óµµ °¨¼ÒÀ² (10%, 25%, 40%)
+    public float weightPenalty = 0.1f; // ì¡ì•˜ì„ ë•Œ ì´ë™ì†ë„ ê°ì†Œìœ¨ (ë‚˜ì¤‘ì— êµ¬í˜„)
 
-    // ³ªÁß¿¡ ¸ğµ¨¸µÀÌ ¹Ù²î¾îµµ Ã£±â ½±°Ô ÀÌ¸§ ÀÚµ¿ º¯°æ
+    // ì—ë””í„°ì—ì„œ ê°’ì„ ë°”ê¾¸ë©´ ì˜¤ë¸Œì íŠ¸ ì´ë¦„ë„ ë³´ê¸° ì¢‹ê²Œ ìë™ ë³€ê²½
     private void OnValidate()
     {
         gameObject.name = $"Item_{type}_{tier}";
